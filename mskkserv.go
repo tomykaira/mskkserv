@@ -9,19 +9,14 @@ import (
 	"github.com/tomykaira/mskkserv/skkserv"
 )
 
-// TODO: configure addr via options
 const (
 	SERVER_TYPE = "tcp"
 )
 
-type Config struct {
-	host string
-	port int
-}
-
 func main() {
 	config := parseFlags()
-	addr := config.host + ":" + strconv.Itoa(config.port)
+
+	addr := config.Host + ":" + strconv.Itoa(config.Port)
 	listener, err := net.Listen(SERVER_TYPE, addr)
 	if err != nil {
 		log.Fatalln("Error listening: ", err.Error())
@@ -29,6 +24,7 @@ func main() {
 	defer listener.Close()
 	log.Println("Listening on " + addr)
 
+	serv := skkserv.New(config)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -36,13 +32,14 @@ func main() {
 			continue
 		}
 		log.Println("Accepting connection from " + conn.RemoteAddr().String())
-		go skkserv.HandleRequest(conn)
+		go serv.HandleRequest(conn)
 	}
 }
 
-func parseFlags() (config Config) {
-	flag.StringVar(&config.host, "host", "127.0.0.1", "Host to bind")
-	flag.IntVar(&config.port, "port", 1178, "Listening port")
+func parseFlags() (config skkserv.Config) {
+	flag.StringVar(&config.Host, "host", "127.0.0.1", "Host to bind")
+	flag.IntVar(&config.Port, "port", 1178, "Listening port")
+	flag.StringVar(&config.DatabaseFile, "database", "/usr/local/share/skk/SKK-JISYO.L.cdb", "Listening port")
 	flag.Parse()
 	return config
 }

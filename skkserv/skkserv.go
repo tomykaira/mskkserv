@@ -6,9 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
-
-	"code.google.com/p/go.text/encoding/japanese"
-	"code.google.com/p/go.text/transform"
+	"strings"
 )
 
 const (
@@ -18,10 +16,24 @@ const (
 	COMMAND_HOST    = '3'
 )
 
-func HandleRequest(conn net.Conn) {
+type Skkserv struct {
+	database *Database
+}
+
+func New(config Config) *Skkserv {
+	serv := new(Skkserv)
+	database, err := LoadDatabase(config.DatabaseFile)
+	if err != nil {
+		log.Fatalln("Failed to load database")
+	}
+	serv.database = database
+	return serv
+}
+
+func (s *Skkserv) HandleRequest(conn net.Conn) {
 	var buffer bytes.Buffer
 	for {
-		err := readFromConnection(conn, &buffer)
+		err := s.readFromConnection(conn, &buffer)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("Error reading from conn", err.Error())
@@ -30,7 +42,7 @@ func HandleRequest(conn net.Conn) {
 			return
 		}
 
-		toClose, err := processCommand(conn, &buffer)
+		toClose, err := s.processCommand(conn, &buffer)
 		if err != nil {
 			log.Println("Unexpected error processing command", err.Error())
 		}
@@ -42,7 +54,7 @@ func HandleRequest(conn net.Conn) {
 	}
 }
 
-func readFromConnection(conn net.Conn, buffer *bytes.Buffer) (err error) {
+func (s *Skkserv) readFromConnection(conn net.Conn, buffer *bytes.Buffer) (err error) {
 	const TEMP_BUFFER_LEN = 1024
 	readbuf := make([]byte, TEMP_BUFFER_LEN)
 	for {
@@ -58,7 +70,7 @@ func readFromConnection(conn net.Conn, buffer *bytes.Buffer) (err error) {
 	return nil
 }
 
-func processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose bool, err error) {
+func (s *Skkserv) processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose bool, err error) {
 	for buffer.Len() > 0 {
 		command, err := buffer.ReadBytes('\n')
 		if err == io.EOF {
@@ -73,8 +85,17 @@ func processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose bool, err erro
 		case COMMAND_END:
 			return true, nil
 		case COMMAND_REQUEST:
-			writer := transform.NewWriter(conn, japanese.EUCJP.NewEncoder())
-			io.WriteString(writer, "1/あ/い/う/\n")
+			last := len(command) - 2
+			for ; command[last] == ' '; last-- {
+			}
+			query := EucToString(command[1 : last+1])
+
+			cands := s.database.Search(query)
+			if cands == nil {
+				conn.Write(StringToEuc("4" + query + " \n"))
+			} else {
+				conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
+			}
 		case COMMAND_VERSION:
 			conn.Write([]byte("mskkserv " + VERSION + " \n"))
 		case COMMAND_HOST:
