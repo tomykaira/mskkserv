@@ -2,30 +2,29 @@ package skkserv
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"log"
 	"net"
 
 	"code.google.com/p/go.text/encoding/japanese"
 	"code.google.com/p/go.text/transform"
-
-	"github.com/tomykaira/mskkserv"
 )
 
 const (
-	COMMAND_CLIENT_END     = '0'
-	COMMAND_CLIENT_REQUEST = '1'
-	COMMAND_VERSION        = '2'
-	COMMAND_HOST           = '3'
+	COMMAND_END     = '0'
+	COMMAND_REQUEST = '1'
+	COMMAND_VERSION = '2'
+	COMMAND_HOST    = '3'
 )
 
 func HandleRequest(conn net.Conn) {
-	buffer := bytes.Buffer
+	var buffer bytes.Buffer
 	for {
-		err := readFromConnection(buffer)
+		err := readFromConnection(conn, buffer)
 		if err != nil {
 			if err != io.EOF {
-				mskkserv.Logger.Print("Error reading from conn", err.Error())
+				log.Println("Error reading from conn", err.Error())
 			}
 			conn.Close()
 			return
@@ -33,7 +32,7 @@ func HandleRequest(conn net.Conn) {
 
 		toClose, err := processCommand(conn, buffer)
 		if err != nil {
-			mskkserv.Logger.Print("Unexpected error processing command", err.Error())
+			log.Println("Unexpected error processing command", err.Error())
 		}
 		if toClose {
 			conn.Close()
@@ -42,7 +41,7 @@ func HandleRequest(conn net.Conn) {
 	}
 }
 
-func readFromConnection(buffer bytes.Buffer) (err error) {
+func readFromConnection(conn net.Conn, buffer bytes.Buffer) (err error) {
 	const TEMP_BUFFER_LEN = 1024
 	readbuf := make([]byte, TEMP_BUFFER_LEN)
 	for {
@@ -69,14 +68,14 @@ func processCommand(conn net.Conn, buffer bytes.Buffer) (toClose bool, err error
 	}
 
 	switch command[0] {
-	case COMMAND_CLIENT_END:
+	case COMMAND_END:
 		return true, nil
-	case COMMAND_CLIENT_REQUEST:
-		writer = transform.NewWriter(conn, japanese.EUCJP.NewDecoder())
+	case COMMAND_REQUEST:
+		writer := transform.NewWriter(conn, japanese.EUCJP.NewDecoder())
 		io.WriteString(writer, "1/あ/い/う/\n")
-	case COMMAND_CLIENT_VERSION:
-		conn.Write([]byte("mskkserv " + mskkserv.VERSION + " "))
-	case COMMAND_CLIENT_HOST:
+	case COMMAND_VERSION:
+		conn.Write([]byte("mskkserv " + VERSION + " "))
+	case COMMAND_HOST:
 		conn.Write([]byte(conn.LocalAddr().String() + " "))
 	default:
 		return true, errors.New("Unknown command")
