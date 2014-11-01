@@ -9,7 +9,7 @@ import (
 
 func createSkkserv(t *testing.T, readable string) (*Skkserv, MockConn) {
 	var config Config
-	config.DatabaseFile = TestDbFile // given in database_test.go init()
+	config.Engines = append([]Engine{}, TestDb)
 
 	var mock MockConn
 	mock.t = t

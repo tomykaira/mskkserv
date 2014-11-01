@@ -19,15 +19,13 @@ const (
 	TEST_DATA = "H4sICIupVFQAA291dC5jZGIA0+dgAAP9UXqUHqVH6VF6lB6lBxXNBKTtoXxsNEjeH8onleYEYl4gXvJ+yaslj5acLNbf/GTJqzMPgRSQYAXKsEBlS4BC+l9ajvyRg2oFgR+vDogyIPEBi/ziNk8IAAA="
 )
 
-var testDb *Database
-var TestDbFile string
+var TestDb *Database
 
 func init() {
 	file, err := ioutil.TempFile("", "skk_testdic")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	TestDbFile = file.Name()
 	decoded, err := base64.StdEncoding.DecodeString(TEST_DATA)
 	if err != nil {
 		log.Fatalln(err)
@@ -41,7 +39,7 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	testDb, err = LoadDatabase(file.Name())
+	TestDb, err = LoadDatabase(file.Name())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -55,17 +53,17 @@ func TestLoadDatabaseFails(t *testing.T) {
 }
 
 func TestSearchNotFound(t *testing.T) {
-	if testDb.Search("わ") != nil {
+	if TestDb.Search("わ") != nil {
 		t.Errorf("Search() must return nil for a not found entry")
 	}
 }
 
 func TestSearchFindOneEntry(t *testing.T) {
-	assertEqualList(t, []string{"割"}, testDb.Search("わりt"))
+	assertEqualList(t, []string{"割"}, TestDb.Search("わりt"))
 }
 
 func TestSearchFindTwoEntries(t *testing.T) {
-	assertEqualList(t, []string{"割り戻", "割戻"}, testDb.Search("わりもどs"))
+	assertEqualList(t, []string{"割り戻", "割戻"}, TestDb.Search("わりもどs"))
 }
 
 func assertEqualList(t *testing.T, x, y []string) {

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/tomykaira/mskkserv/skkserv"
 )
@@ -39,7 +40,32 @@ func main() {
 func parseFlags() (config skkserv.Config) {
 	flag.StringVar(&config.Host, "host", "127.0.0.1", "Host to bind")
 	flag.IntVar(&config.Port, "port", 1178, "Listening port")
-	flag.StringVar(&config.DatabaseFile, "database", "/usr/local/share/skk/SKK-JISYO.L.cdb", "Listening port")
 	flag.Parse()
+	config.Engines = initialzeEngines(flag.Args())
 	return config
+}
+
+func initialzeEngines(args []string) (engines []skkserv.Engine) {
+	for _, arg := range args {
+		pair := strings.SplitN(arg, "=", 2)
+		switch pair[0] {
+		case "database":
+			if len(pair) == 1 {
+				log.Fatalln("database engine requires CDB file: database=/path/to/SKK-JISYO.L.cdb")
+			}
+			database, err := skkserv.LoadDatabase(pair[1])
+			if err != nil {
+				log.Fatalln("Failed to load database")
+			}
+			engines = append(engines, database)
+			log.Println("Using database engine " + pair[1])
+		case "googletrans":
+			engines = append(engines, skkserv.NewGoogleTrans())
+			log.Println("Using Google transliterate engine")
+		}
+	}
+	if len(engines) == 0 {
+		log.Fatalln("No engines selected")
+	}
+	return engines
 }

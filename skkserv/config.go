@@ -1,7 +1,7 @@
 package skkserv
 
 type Config struct {
-	Host         string
-	Port         int
-	DatabaseFile string
+	Host    string
+	Port    int
+	Engines []Engine
 }

@@ -17,17 +17,11 @@ const (
 )
 
 type Skkserv struct {
-	database *Database
+	engines []Engine
 }
 
 func New(config Config) *Skkserv {
-	serv := new(Skkserv)
-	database, err := LoadDatabase(config.DatabaseFile)
-	if err != nil {
-		log.Fatalln("Failed to load database")
-	}
-	serv.database = database
-	return serv
+	return &Skkserv{engines: config.Engines}
 }
 
 func (s *Skkserv) HandleRequest(conn net.Conn) {
@@ -81,6 +75,7 @@ func (s *Skkserv) processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose b
 			return true, err
 		}
 
+	Process:
 		switch command[0] {
 		case COMMAND_END:
 			return true, nil
@@ -90,12 +85,15 @@ func (s *Skkserv) processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose b
 			}
 			query := EucToString(command[1 : last+1])
 
-			cands := s.database.Search(query)
-			if cands == nil {
-				conn.Write(StringToEuc("4" + query + " \n"))
-			} else {
-				conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
+			for _, engine := range s.engines {
+				cands := engine.Search(query)
+				log.Printf("Trying %v, %v\n", engine, len(cands))
+				if cands != nil {
+					conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
+					break Process
+				}
 			}
+			conn.Write(StringToEuc("4" + query + " \n"))
 		case COMMAND_VERSION:
 			conn.Write([]byte("mskkserv " + VERSION + " \n"))
 		case COMMAND_HOST:
