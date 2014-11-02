@@ -101,6 +101,16 @@ func TestHandleRequestVersionThenEnd(t *testing.T) {
 	}
 }
 
+func TestHandleRequestVersionNoLF(t *testing.T) {
+	serv, conn := createSkkserv(t, "2")
+	serv.HandleRequest(conn)
+	written := EucToString(conn.written.Bytes())
+	expected := "mskkserv " + VERSION + " \n"
+	if written != expected {
+		t.Errorf("Version returned unexpected string %v (expected: %v)", written, expected)
+	}
+}
+
 func TestHandleRequestVersionTwiceThenEnd(t *testing.T) {
 	serv, conn := createSkkserv(t, "2\n2\n0\n")
 	serv.HandleRequest(conn)
@@ -128,7 +138,20 @@ func TestHandleRequestRequestFailEnd(t *testing.T) {
 }
 
 func TestHandleRequestRequestSuccessEnd(t *testing.T) {
-	serv, conn := createSkkserv(t, "1わりもどs\n0\n")
+	serv, conn := createSkkserv(t, "1わりもどs \n0\n")
+	serv.HandleRequest(conn)
+	if !*conn.closed {
+		t.Error("0 does not close connection")
+	}
+	written := EucToString(conn.written.Bytes())
+	expected := "1/割り戻/割戻/\n"
+	if written != expected {
+		t.Errorf("Version returned unexpected string %v (expected: %v)", written, expected)
+	}
+}
+
+func TestHandleRequestRequestNoLFSuccessEnd(t *testing.T) {
+	serv, conn := createSkkserv(t, "1わりもどs ")
 	serv.HandleRequest(conn)
 	if !*conn.closed {
 		t.Error("0 does not close connection")

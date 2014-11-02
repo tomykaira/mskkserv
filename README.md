@@ -34,6 +34,16 @@ mskkserv [-host=HOST] [-port=PORT] ENGINES
     - `database=/path/to/SKK-JISYO.cdb`
     - `googletrans`
 
+## プロトコル
+
+[jj1bdx/dbskkd-cdb/skk-server-protocol.txt](https://github.com/jj1bdx/dbskkd-cdb/blob/master/skk-server-protocol.txt) を参考にしているが、次のような違いがある。
+これは libskk 等の実装がコマンド末尾の LF を送信しないためである。
+
+- コマンド文字は常に1バイトであり、コマンド文字1バイトで終了してもよい
+- `1` (CLIENT_REQUEST) の dictionary_key はスペースまでとし、スペース1文字以上は必須。LF等で代替することはできない。
+- 余計なスペース、LFは無視する
+- 現状補完候補を返す `4` には対応していない
+
 ## License
 
 Copyright 2014 tomykaira. All Rights Reserved.
