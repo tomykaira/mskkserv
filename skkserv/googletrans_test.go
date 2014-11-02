@@ -42,14 +42,14 @@ func TestGoogleSearchFindEntries(t *testing.T) {
 		if !strings.Contains(url, "%E3%81%82%E3%81%95") {
 			t.Fatalf("Request url does not contain encoded query %v", url)
 		}
-		return &http.Response{Body: newMockReadCloser(`[["あさ",["朝","麻","アサ","あさ","厚狭"]]]`)}, nil
+		return &http.Response{Body: newMockReadCloser(`["SUCCESS",[["あさ",["朝","麻","アサ","あさ","厚狭","褪さ"],[],{"candidate_type":[0,0,0,0,0]}]]]`)}, nil
 	}}
-	assertEqualList(t, []string{"朝", "麻", "厚狭"}, g.Search("あさ"))
+	assertEqualList(t, []string{"朝", "麻", "厚狭", "褪さ"}, g.Search("あさ"))
 }
 
 func TestGoogleSearchReturnNilWhenAllFiltered(t *testing.T) {
 	var g = &GoogleTrans{getter: func(url string) (*http.Response, error) {
-		return &http.Response{Body: newMockReadCloser(`[["あさ",["あさ","アサ"]]]`)}, nil
+		return &http.Response{Body: newMockReadCloser(`["SUCCESS",[["あさ",["アサ","あさ"],[],{"candidate_type":[0,0,0,0,0]}]]]`)}, nil
 	}}
 	res := g.Search("あさ")
 	if res != nil {
@@ -62,7 +62,7 @@ func TestGoogleSearchReturnNilForBrokenData(t *testing.T) {
 		if !strings.Contains(url, "%E3%81%82%E3%81%95") {
 			t.Fatalf("Request url does not contain encoded query %v", url)
 		}
-		return &http.Response{Body: newMockReadCloser(`[["あ",["朝","麻","アサ","あさ","厚狭"]]]`)}, nil
+		return &http.Response{Body: newMockReadCloser(`["SUCCESS",[["あ",["朝","麻","アサ","あさ","厚狭"],[],{"candidate_type":[0,0,0,0,0]}]]]`)}, nil
 	}}
 	res := g.Search("あさ")
 	if res != nil {

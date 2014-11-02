@@ -32,7 +32,9 @@ func main() {
 			log.Println("Error accepting connection: ", err.Error())
 			continue
 		}
-		log.Println("Accepting connection from " + conn.RemoteAddr().String())
+		if config.Debug {
+			log.Println("Accepting connection from " + conn.RemoteAddr().String())
+		}
 		go serv.HandleRequest(conn)
 	}
 }
@@ -40,6 +42,7 @@ func main() {
 func parseFlags() (config skkserv.Config) {
 	flag.StringVar(&config.Host, "host", "127.0.0.1", "Host to bind")
 	flag.IntVar(&config.Port, "port", 1178, "Listening port")
+	flag.BoolVar(&config.Debug, "debug", false, "Enable debug mode")
 	flag.Parse()
 	config.Engines = initialzeEngines(flag.Args())
 	return config

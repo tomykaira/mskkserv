@@ -68,7 +68,8 @@ func TestSearchFindTwoEntries(t *testing.T) {
 
 func assertEqualList(t *testing.T, x, y []string) {
 	if len(x) != len(y) {
-		t.Errorf("lists sizes are different")
+		t.Errorf("lists sizes are different %v != %v", x, y)
+		return
 	}
 
 	for i := 0; i < len(x); i++ {

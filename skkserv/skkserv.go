@@ -1,8 +1,7 @@
 package skkserv
 
 import (
-	"bytes"
-	"errors"
+	"bufio"
 	"io"
 	"log"
 	"net"
@@ -17,77 +16,46 @@ const (
 )
 
 type Skkserv struct {
-	engines []Engine
+	config Config
 }
 
 func New(config Config) *Skkserv {
-	return &Skkserv{engines: config.Engines}
+	return &Skkserv{config: config}
 }
 
 func (s *Skkserv) HandleRequest(conn net.Conn) {
-	var buffer bytes.Buffer
+	buf := bufio.NewReader(conn)
 	for {
-		err := s.readFromConnection(conn, &buffer)
+		command, err := buf.ReadByte()
 		if err != nil {
 			if err != io.EOF {
-				log.Println("Error reading from conn", err.Error())
+				log.Println("Error reading command", err.Error())
 			}
 			conn.Close()
 			return
-		}
-
-		toClose, err := s.processCommand(conn, &buffer)
-		if err != nil {
-			log.Println("Unexpected error processing command", err.Error())
-		}
-		if toClose {
-			conn.Close()
-			log.Println("Closed conenction from " + conn.RemoteAddr().String())
-			return
-		}
-	}
-}
-
-func (s *Skkserv) readFromConnection(conn net.Conn, buffer *bytes.Buffer) (err error) {
-	const TEMP_BUFFER_LEN = 1024
-	readbuf := make([]byte, TEMP_BUFFER_LEN)
-	for {
-		len, err := conn.Read(readbuf)
-		if err != nil {
-			return err
-		}
-		buffer.Write(readbuf[0:len])
-		if len < TEMP_BUFFER_LEN || readbuf[len-1] == '\n' {
-			break
-		}
-	}
-	return nil
-}
-
-func (s *Skkserv) processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose bool, err error) {
-	for buffer.Len() > 0 {
-		command, err := buffer.ReadBytes('\n')
-		if err == io.EOF {
-			// command does not completed. wait for next chunk
-			buffer.Write(command)
-			return false, nil
-		} else if err != nil {
-			return true, err
 		}
 
 	Process:
-		switch command[0] {
+		switch command {
 		case COMMAND_END:
-			return true, nil
-		case COMMAND_REQUEST:
-			last := len(command) - 2
-			for ; command[last] == ' '; last-- {
+			conn.Close()
+			if s.config.Debug {
+				log.Println("Disconnect " + conn.RemoteAddr().String() + " due to COMMAND_END")
 			}
-			query := EucToString(command[1 : last+1])
+			return
+		case COMMAND_REQUEST:
+			queryBytes, err := buf.ReadBytes(' ')
+			if err != nil {
+				log.Println("Error reading query string", err.Error())
+				conn.Close()
+			}
+			query := EucToString(queryBytes[0 : len(queryBytes)-1])
 
-			for _, engine := range s.engines {
+			for _, engine := range s.config.Engines {
 				cands := engine.Search(query)
-				log.Printf("Trying %v, %v\n", engine, len(cands))
+				if s.config.Debug {
+					log.Printf("Trying %v, %v\n", engine, len(cands))
+				}
 				if cands != nil {
 					conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
 					break Process
@@ -98,10 +66,10 @@ func (s *Skkserv) processCommand(conn net.Conn, buffer *bytes.Buffer) (toClose b
 			conn.Write([]byte("mskkserv " + VERSION + " \n"))
 		case COMMAND_HOST:
 			conn.Write([]byte(conn.LocalAddr().String() + " \n"))
+		case ' ', '\n':
+			// skip indifferent separators
 		default:
-			return true, errors.New("Unknown command")
+			log.Printf("Unknown command %v. Skipping\n", command)
 		}
 	}
-
-	return false, nil
 }

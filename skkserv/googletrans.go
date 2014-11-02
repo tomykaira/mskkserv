@@ -2,6 +2,7 @@ package skkserv
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -37,20 +38,40 @@ func (g *GoogleTrans) Search(query string) (cands []string) {
 	return decodeResponse(query, bytes.NewBuffer(data).String())
 }
 
-// Decode response like [["あさ",["朝","麻","アサ","あさ","厚狭"]]] to
+// Decode response like ["SUCCESS",[["あさ",["朝","麻","アサ","あさ","厚狭"],[],{"candidate_type":[0,0,0,0,0]}]]] to
 // {"朝","麻","厚狭"}
-func decodeResponse(query string, data string) (cands []string) {
-	re := regexp.MustCompile("\\[\\s*\"" + query + "\"\\s*,\\s*\\[(.*?)\\]\\s*\\]")
-	matches := re.FindStringSubmatch(data)
+func decodeResponse(query string, response string) (cands []string) {
+	var data interface{}
+	dec := json.NewDecoder(bytes.NewBufferString(response))
+	dec.Decode(&data)
 
-	if len(matches) <= 1 {
+	if arr, ok := data.([]interface{}); ok && len(arr) >= 2 {
+		data = arr[1]
+	} else {
 		return nil
 	}
-	filterRe := regexp.MustCompile("(([ァ-ヾ]+)|([ぁ-ゞ]+)|([ｦ-ﾟ]+)|([a-zA-Z]+))")
-	for _, cand := range strings.Split(matches[1], ",") {
-		cand = strings.Trim(cand, " \"")
-		if !filterRe.MatchString(cand) {
-			cands = append(cands, cand)
+	if arr, ok := data.([]interface{}); ok && len(arr) >= 1 {
+		data = arr[0]
+	} else {
+		return nil
+	}
+	if arr, ok := data.([]interface{}); ok && len(arr) >= 2 && arr[0] == query {
+		data = arr[1]
+	} else {
+		return nil
+	}
+	rawCands, ok := data.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	filterRe := regexp.MustCompile("\\A(([ァ-ヾ]+)|([ぁ-ゞ]+)|([ｦ-ﾟ]+)|([a-zA-Z]+))\\z")
+	for _, cand := range rawCands {
+		if str, ok := cand.(string); ok {
+			str = strings.Trim(str, " ")
+			if !filterRe.MatchString(str) {
+				cands = append(cands, str)
+			}
 		}
 	}
 	return cands
