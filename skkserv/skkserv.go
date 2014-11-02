@@ -53,7 +53,9 @@ func (s *Skkserv) HandleRequest(conn net.Conn) {
 
 			for _, engine := range s.config.Engines {
 				cands := engine.Search(query)
-				log.Printf("Trying %v, %v\n", engine, len(cands))
+				if s.config.Debug {
+					log.Printf("Trying %v, %v\n", engine, len(cands))
+				}
 				if cands != nil {
 					conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
 					break Process
