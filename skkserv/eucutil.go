@@ -15,9 +15,12 @@ func EucToString(euc []byte) string {
 	return buf.String()
 }
 
-func StringToEuc(str string) []byte {
+func StringToEuc(str string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := transform.NewWriter(&buf, japanese.EUCJP.NewEncoder())
-	io.WriteString(writer, str)
-	return buf.Bytes()
+	_, err := io.WriteString(writer, str)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

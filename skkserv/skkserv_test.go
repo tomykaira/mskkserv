@@ -13,7 +13,8 @@ func createSkkserv(t *testing.T, readable string) (*Skkserv, MockConn) {
 
 	var mock MockConn
 	mock.t = t
-	mock.readable = bytes.NewBuffer(StringToEuc(readable))
+	e, _ := StringToEuc(readable)
+	mock.readable = bytes.NewBuffer(e)
 	mock.written = bytes.NewBuffer(nil)
 	mock.closed = new(bool)
 	*mock.closed = false

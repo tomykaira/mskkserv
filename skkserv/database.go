@@ -21,7 +21,10 @@ func LoadDatabase(cdbPath string) (db *Database, err error) {
 }
 
 func (d *Database) Search(query string) (cands []string) {
-	eucQuery := StringToEuc(query)
+	eucQuery, err := StringToEuc(query)
+	if err != nil {
+		return
+	}
 	rdata, err := d.cdb.Find(eucQuery)
 	if err != nil {
 		return

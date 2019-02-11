@@ -74,7 +74,7 @@ func assertEqualList(t *testing.T, x, y []string) {
 
 	for i := 0; i < len(x); i++ {
 		if x[i] != y[i] {
-			t.Errorf("Lists are different at %i: %v != %v", i, x[i], y[i])
+			t.Errorf("Lists are different at %v: %v != %v", i, x[i], y[i])
 		}
 	}
 }

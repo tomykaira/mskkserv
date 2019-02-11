@@ -2,10 +2,10 @@ package skkserv
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"log"
 	"net"
-	"strings"
 )
 
 const (
@@ -54,14 +54,29 @@ func (s *Skkserv) HandleRequest(conn net.Conn) {
 			for _, engine := range s.config.Engines {
 				cands := engine.Search(query)
 				if s.config.Debug {
-					log.Printf("Trying %v, %v\n", engine, len(cands))
+					log.Printf("Trying %v, %v, %v\n", engine, query, len(cands))
 				}
-				if cands != nil {
-					conn.Write(StringToEuc("1/" + strings.Join(cands, "/") + "/\n"))
+				emit := false
+				var retbuf bytes.Buffer
+				head, _ := StringToEuc("1")
+				retbuf.Write(head)
+				for _, cand := range cands {
+					euc, err := StringToEuc("/" + cand)
+					if err == nil {
+						emit = true
+						retbuf.Write(euc)
+					}
+				}
+				trail, _ := StringToEuc("/\n")
+				retbuf.Write(trail)
+				log.Println(EucToString(retbuf.Bytes()))
+				if emit {
+					conn.Write(retbuf.Bytes())
 					break Process
 				}
 			}
-			conn.Write(StringToEuc("4" + query + " \n"))
+			ret, _ := StringToEuc("4" + query + " \n")
+			conn.Write(ret)
 		case COMMAND_VERSION:
 			conn.Write([]byte("mskkserv " + VERSION + " \n"))
 		case COMMAND_HOST:
