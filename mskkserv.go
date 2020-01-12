@@ -65,6 +65,13 @@ func initialzeEngines(args []string) (engines []skkserv.Engine) {
 		case "googletrans":
 			engines = append(engines, skkserv.NewGoogleTrans())
 			log.Println("Using Google transliterate engine")
+		case "googlejapaneseinput":
+			engine, err := skkserv.NewGoogleJapaneseInput()
+			if err != nil {
+				log.Fatalln("Error in loading Google JapaneseInput engine %v", err)
+			}
+			engines = append(engines, engine)
+			log.Println("Using Google Japanese Input engine")
 		}
 	}
 	if len(engines) == 0 {

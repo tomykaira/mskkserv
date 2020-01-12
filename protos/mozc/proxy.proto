@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "mozc/commands/commands.proto";
+
+package mozc;
+option go_package = "github.com/tomykaira/mskkserv/mozc";
+
+service Proxy {
+  rpc SendKeyEvent (SendKeyEventRequest) returns (SendKeyEventResponse) {}
+  rpc SendCommand (SendCommandRequest) returns (SendCommandResponse) {}
+}
+
+message SendKeyEventRequest {
+  commands.KeyEvent key_event = 1;
+  commands.Context context = 2;
+}
+
+message SendKeyEventResponse {
+  commands.Output output = 1;
+}
+
+message SendCommandRequest {
+  commands.SessionCommand command = 1;
+  commands.Context context = 2;
+}
+
+message SendCommandResponse {
+  commands.Output output = 1;
+}

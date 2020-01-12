@@ -20,6 +20,7 @@ go get github.com/tomykaira/mskkserv
 ```
 
 ローカル辞書を利用する場合、CDB 形式の辞書を入手するか、自分で変換しておく。
+変換方法は ddskk-cdb や tinycdb で検索すると情報が得られる。
 
 ## 利用法
 
@@ -29,10 +30,13 @@ mskkserv [-host=HOST] [-port=PORT] ENGINES
 
 - HOST: バインドするホスト名 (デフォルトは `127.0.0.1`)
 - PORT: listen するポート番号 (デフォルトは `1178`)
-- ENGINES: 必須。次のなかから任意の組み合わせをスペース区切りで指定する。
+- ENGINES: 必須。次のなかから1つ異常を組み合わせ、スペース区切りで指定する。
   先に指定されたものから順に検索され、最初に結果がみつかったら後は検索しない。
     - `database=/path/to/SKK-JISYO.cdb`
     - `googletrans`
+    - `googlejapaneseinput`
+      - GoogleJapaneseInput engine の利用には proxy program が必要であるが、公開していない。 `proxy.proto` を参考に実装するか、個人的に問い合わせられたい。
+      - 変換ではなく予測候補を元にしているため、精度が高くない。
 
 ## プロトコル
 
@@ -46,7 +50,12 @@ mskkserv [-host=HOST] [-port=PORT] ENGINES
 
 ## License
 
-Copyright 2014 tomykaira. All Rights Reserved.
+Copyright 2014-2020 tomykaira. All Rights Reserved.
 
 This software is licensed under the MIT license.
 See `LICENSE` for details.
+
+## About mozc protobuf files
+
+Some files under `protos/mozc/` are modified version of [mozc/src/protocol](https://github.com/google/mozc/tree/master/src/protocol).
+They are licensed to Google Inc. and published under BSD 3-Clause Revised License.
