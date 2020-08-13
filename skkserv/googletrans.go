@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Getter func(url string) (resp *http.Response, err error)
@@ -18,7 +19,10 @@ type GoogleTrans struct {
 }
 
 func NewGoogleTrans() *GoogleTrans {
-	return &GoogleTrans{getter: http.Get}
+	client := http.Client{
+		Timeout: 800 * time.Millisecond,
+	}
+	return &GoogleTrans{getter: client.Get}
 }
 
 func (g *GoogleTrans) Search(query string) (cands []string) {

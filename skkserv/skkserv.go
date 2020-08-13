@@ -69,8 +69,8 @@ func (s *Skkserv) HandleRequest(conn net.Conn) {
 				}
 				trail, _ := StringToEuc("/\n")
 				retbuf.Write(trail)
-				log.Println(EucToString(retbuf.Bytes()))
 				if emit {
+					log.Println(EucToString(retbuf.Bytes()))
 					conn.Write(retbuf.Bytes())
 					break Process
 				}
